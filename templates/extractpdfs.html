@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Convert PDF Document</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+
+    <style type="text/css">
+        * {
+            box-sizing: border-box;
+        }
+
+        .form {
+            padding: 10px;
+            margin: 40px;
+        }
+
+        .files input {
+            -webkit-transition: outline-offset .15s ease-in-out, background-color .15s linear;
+            transition: outline-offset .15s ease-in-out, background-color .15s linear;
+            text-align: center !important;
+            width: 100% !important;
+            height: 222px;
+            padding: 117px 0px 0% 40%;
+        }
+
+        .files input:focus {
+            outline: 2px dashed #92b0b3;
+            outline-offset: -10px;
+            -webkit-transition: outline-offset .15s ease-in-out, background-color .15s linear;
+            transition: outline-offset .15s ease-in-out, background-color .15s linear;
+            border: 1px solid #92b0b3;
+        }
+
+        .files {
+            position: relative
+        }
+
+        .files:after {
+            pointer-events: none;
+            position: absolute;
+            top: 75px;
+            left: 0;
+            width: 53px;
+            right: 0;
+            height: 56px;
+            content: "";
+            background-image: url('https://cdn-icons-png.flaticon.com/128/167/167499.png');
+            display: block;
+            margin: 0% 0% 0% 47%;
+            background-size: 100%;
+            background-repeat: no-repeat;
+        }
+
+        .color input {
+            background-color: #f1f1f1;
+        }
+
+        .files:before {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            pointer-events: none;
+            width: 100%;
+            right: 0;
+            height: 45px;
+            content: " or drag it here. ";
+            display: block;
+            margin: 0px 0px 14px 91px;
+            color: #2ea591;
+            font-weight: 600;
+            text-transform: capitalize;
+            text-align: center;
+        }
+
+        .btn-primary {
+            padding: 10px 40px;
+            font-size: 18px;
+            font-weight: 500;
+            background-color: #3e95f3;
+        }
+
+        table {
+            border: 1px solid black;
+            border-collapse: collapse;
+            margin: 1% 0% 0% 1%;
+        }
+
+        table.table {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        td,
+        th {
+            border: 1px solid black;
+            padding: 10px;
+            font-size: 11px;
+        }
+
+        th {
+            font-size: 14px;
+        }
+
+        tr:nth-child(odd) {
+            background-color: #f2f2f2;
+        }
+        h1{
+            margin: 14px 0px 0px;
+            font-weight: bold;
+           
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 form" style="padding-top: 10px; margin: 0;">
+                <div class="col-md-12">
+                    <h2 class="text-center" style="font-weight: bold;">Convert PDF Document</h2>
+                </div>
+                <form method="POST" action="/process_pdf" id="uploadForm" enctype="multipart/form-data">
+                    <div class="col-md-12" style="width: 70%; margin: 0% 0% 0% 15%;">
+                        <div class="form-group files">
+                            <label style="margin: 1% 0% 2% 40%; font-weight: bold;">Upload Your File</label>
+                            <input type="file" class="form-control" multiple="multiple" name="file">
+                        </div>
+                    </div>
+                    <div class="col-md-12 text-center">
+                        <button type="button" class="btn btn-primary" id="convertButton">Convert</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <table class="table" id="resultTable" width="100%" border="0" cellspacing="0" cellpadding="0">
+        <!-- Your table structure will be added here -->
+    </table>
+
+    <script>
+        $(document).ready(function () {
+            $("#convertButton").click(function (event) {
+                event.preventDefault();
+
+                var formData = new FormData();
+                var fileInput = $('input[name="file"]')[0].files[0];
+
+                if (!fileInput) {
+                    alert("Please select a file to upload.");
+                    return;
+                }
+
+                formData.append('pdf_file', fileInput);
+
+                fetch('http://127.0.0.1:5000/process_pdf', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data);
+                        // Handle the response and create the table here
+                        createTable(data);
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            });
+        });
+
+        function createTable(data) {
+            var table = document.getElementById("resultTable");
+            table.innerHTML = ""; // Clear the table
+
+            for (var i = 0; i < data.length; i++) {
+                var currentData = data[i];
+
+                // Extract and display the table name
+                if (currentData[0]["Table"]) {
+                    var tableName = currentData[0]["Table"];
+                    var tableHeader = document.createElement("h1");
+                    tableHeader.innerHTML = tableName;
+                    table.appendChild(tableHeader);
+                }
+                else if (Array.isArray(currentData)) {
+                    // Create a new table for each set of data
+                    var newTable = document.createElement("table");
+                    table.appendChild(newTable);
+
+                    // Create table headers
+                    var headerRow = newTable.insertRow(0);
+                    for (var key in currentData[0]) {
+                        var headerCell = document.createElement("th");
+                        headerCell.innerHTML = key;
+                        headerRow.appendChild(headerCell);
+                    }
+
+                    // Create table rows with data
+                    for (var j = 1; j < currentData.length; j++) {
+                        var row = newTable.insertRow(j);
+                        for (var key in currentData[j]) {
+                            var cell = row.insertCell();
+                            cell.innerHTML = currentData[j][key];
+                        }
+                    }
+                }
+            }
+
+
+            var page = $("#resultTable");
+            // Extract and display the table name
+            if (data["Table"]) {
+                var tableName = data["Table"];
+                var tableHeader = document.createElement("h1");
+                tableHeader.innerHTML = tableName;
+                page.append(tableHeader);
+            }
+            // Loop through each key (e.g., "list1_key," "list2_key") and create tables with headers
+            for (var key in data["OPERATING EXPENSES"]) {
+                var table = $("<table>");
+                table.css({
+                    margin: "21px"
+                });
+                var thead = $("<thead>");
+                var tr = $("<tr>");
+
+                // Get the keys (column names) of the first object in the JSON data
+                var cols = Object.keys(data["OPERATING EXPENSES"][key][0]);
+
+                // Create header cells
+                $.each(cols, function (i, item) {
+                    var th = $("<th>");
+                    th.text(item);
+                    th.css({
+                        background: "#333",
+                        color: "#fff",
+                        // padding: "10px",
+                        textAlign: "left"
+                    });
+                    tr.append(th);
+                });
+
+                thead.append(tr);
+                table.append(thead);
+
+                // Loop through the JSON data and create table rows
+                $.each(data["OPERATING EXPENSES"][key], function (i, item) {
+                    var tr = $("<tr>");
+
+                    // Each item in the list corresponds to a key-value pair object
+                    for (var itemName in item) {
+                        var td = $("<td>");
+                        var subItem = item[itemName];
+                        // Create a table for the sub-item
+                        var subTable = $("<table>");
+
+                        // Get the keys of the sub-item object
+                        var subCols = Object.keys(subItem);
+                        $.each(subCols, function (i, subKey) {
+                            var subTh = $("<th>").text(subKey);
+                            var subTd = $("<td>").text(subItem[subKey]);
+                            var subTr = $("<tr>").append(subTh, subTd);
+                            subTable.append(subTr);
+                        });
+
+                        // Add the sub-table to the main table cell
+                        td.append(subTable);
+                        tr.append(td);
+                    }
+
+                    table.append(tr);
+                });
+
+                // Append the table and the key as a header
+                page.append($("").text(key));
+                page.append(table);
+            }
+
+
+
+            for (var key in data["RENTAL INCOME"]) {
+                var table = $("<table>");
+                table.css({
+                    margin: "21px"
+                });
+                var thead = $("<thead>");
+                var tr = $("<tr>");
+
+                // Get the keys (column names) of the first object in the JSON data
+                var cols = Object.keys(data["RENTAL INCOME"][key][0]);
+
+                // Create header cells
+                $.each(cols, function (i, item) {
+                    var th = $("<th>");
+                    th.css({
+                        background: "#333",
+                        color: "#fff",
+                        // padding: "10px",
+                        textAlign: "left"
+                    });
+                    th.text(item);
+                    tr.append(th);
+                });
+
+                thead.append(tr);
+                table.append(thead);
+
+                // Loop through the JSON data and create table rows
+                $.each(data["RENTAL INCOME"][key], function (i, item) {
+                    var tr = $("<tr>");
+
+                    // Each item in the list corresponds to a key-value pair object
+                    for (var itemName in item) {
+                        var td = $("<td>");
+                        var subItem = item[itemName];
+                        // Create a table for the sub-item
+                        var subTable = $("<table>");
+
+                        // Get the keys of the sub-item object
+                        var subCols = Object.keys(subItem);
+                        $.each(subCols, function (i, subKey) {
+                            var subTh = $("<th>").text(subKey);
+                            var subTd = $("<td>").text(subItem[subKey]);
+                            var subTr = $("<tr>").append(subTh, subTd);
+                            subTable.append(subTr);
+                        });
+
+                        // Add the sub-table to the main table cell
+                        td.append(subTable);
+                        tr.append(td);
+                    }
+
+                    table.append(tr);
+                });
+
+                // Append the table and the key as a header
+                page.append($("").text(key));
+                page.append(table);
+            }
+
+            // Display the primary_data section
+            var primaryData = data["primary_data"];
+            var primaryDataTable = $("<table>");
+            primaryDataTable.css({
+                margin: "21px"
+            });
+            var primaryDataBody = $("<tbody>");
+
+            for (var key in primaryData) {
+                var tr = $("<tr>");
+                var th = $("<th>").text(key);
+                th.css({
+                    background: "#333",
+                    color: "#fff",
+                    padding: "10px",
+                    textAlign: "left"
+                });
+                var td = $("<td>").text(primaryData[key]);
+                tr.append(th, td);
+                primaryDataBody.append(tr);
+            }
+
+            primaryDataTable.append(primaryDataBody);
+            page.append($("").text("Primary Data"));
+            page.append(primaryDataTable);
+
+        }
+
+
+    </script>
+</body>
+
+</html>
